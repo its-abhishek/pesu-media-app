@@ -12,7 +12,7 @@ const Page = () => {
           alt="logo"
           className=" h-40 w-40 md:h-96 md:w-96"
         />
-        <h1 className="-mt-8 text-3xl font-bold md:-mt-14">Pesumedia</h1>
+        <div className="mt-10"><h1 className="-mt-8 text-3xl font-bold md:-mt-14">Pesumedia</h1></div>
       </div>
       <SiginForm formType="signin" />
     </main>
