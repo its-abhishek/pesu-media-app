@@ -56,7 +56,7 @@ const EditProfile = () => {
                 className=" h-24 w-full rounded-md object-cover "
               />
               <div className="absolute top-0 h-24 w-full bg-darkTransparent"></div>
-              {/* <UploadButton
+              <UploadButton
                 endpoint="imageUploader"
                 onClientUploadComplete={(res) => {
                   toast.success("successfully updated profile");
@@ -69,12 +69,11 @@ const EditProfile = () => {
                   // Do something with the error.
                   toast.error(`Max size should be less than 16 MB`);
                 }}
-                className="absolute right-2 top-6 ut-allowed-content:text-lightTheme sm:right-8"
-              /> */}
-
+                className=" absolute right-2 top-6 ut-allowed-content:text-lightTheme sm:right-8 "
+              />
             </div>
 
-            {/* <div className=" z-10  -mt-16 flex w-full flex-col items-start gap-2 p-4 sm:ml-4">
+            <div className=" z-10  -mt-16 flex w-full flex-col items-start gap-2 p-4 sm:ml-4">
               <ProfileImage
                 src={
                   updatedUser.imageUrl ||
@@ -97,7 +96,7 @@ const EditProfile = () => {
                 }}
                 className=" -ml-4 dark:ut-allowed-content:text-lightTheme"
               />
-            </div> */}
+            </div>
 
             <form
               action=""

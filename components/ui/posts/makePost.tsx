@@ -30,59 +30,49 @@ import {
 
 const MakePost = ({ redirect }: { redirect: boolean }) => {
   const [post, setPost] = useState({ text: "", image: "", video: "" });
-  const [user, setUser] = useRecoilState(userState);
+  const [user] = useRecoilState(userState);
   const [posts, setPosts] = useRecoilState(postState);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
-
-  const handlePost = (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePost = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (user.email && (post.text || post.image || post.video)) {
-      toast
-        .promise(
-          axios.post("/api/post/upload", { email: user.email, post }),
-          {
-            loading: "Posting...",
-            success: <p>Successfully Uploaded Post</p>,
-            error: (error) => {
-              console.error("Failed to upload post:", error);
-              return <b>Could not upload Post</b>;
+      try {
+        const response: AxiosResponse = await axios.post("/api/post/upload", { email: user.email, post });
+        if (response.status === 200) {
+          const newPost = response.data;
+          setPosts((prev) => [
+            {
+              ...newPost,
+              user,
             },
-          }
-        )
-        .then((response: AxiosResponse) => {
-          if (response.status === 200) {
-            const newPost = response.data;
-            setPosts((prev) => [
-              {
-                ...newPost,
-                user,
-              },
-              ...prev,
-            ]);
-            setPost((prev) => ({ ...prev, text: "", image: "", video: "" }));
-            if (redirect) router.back();
-          }
-        });
+            ...prev,
+          ]);
+          setPost({ text: "", image: "", video: "" });
+          if (redirect) router.back();
+          toast.success("Successfully Uploaded Post");
+        }
+      } catch (error) {
+        toast.error("Could not upload Post");
+        console.error("Error creating post:", error);
+      }
     }
   };
+
   return (
     <div>
       <form
-        className=" flex items-center gap-1 p-4 sm:gap-2"
-        onSubmit={(e) => {
-          handlePost(e);
-        }}
+        className="flex items-center gap-1 p-4 sm:gap-2"
+        onSubmit={handlePost}
       >
         <textarea
           name="post"
-          id=""
           cols={30}
           rows={1}
-          placeholder="What's happening ?"
+          placeholder="What's happening?"
           value={post.text}
-          className=" w-full rounded-3xl border-2 bg-lightTheme p-2 dark:bg-darkTheme sm:p-4"
+          className="w-full rounded-3xl border-2 bg-lightTheme p-2 dark:bg-darkTheme sm:p-4"
           onChange={(e) => {
             if (e.target.value.slice(-1) === "@") {
               setIsOpen(true);
@@ -92,12 +82,12 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
         ></textarea>
 
         <EmojiSelector setPost={setPost} />
-        <Button type="submit" className=" rounded-3xl font-bold">
+        <Button type="submit" className="rounded-3xl font-bold">
           Post
         </Button>
       </form>
 
-      <div className=" relative grid w-full items-center justify-center">
+      <div className="relative grid w-full items-center justify-center">
         <Mention
           isOpen={isOpen}
           setIsOpen={setIsOpen}
@@ -105,15 +95,15 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
           text={post.text}
         />
       </div>
-      <p className=" px-8 pb-2 text-sm text-darkGray dark:text-lightGray">
-        you can @mention other people
+      <p className="px-8 pb-2 text-sm text-darkGray dark:text-lightGray">
+        You can @mention other people
       </p>
-      {/* <div className=" flex w-full items-center gap-4 px-8 pb-4">
+      <div className="flex w-full items-center gap-4 px-8 pb-4">
         <AlertDialog>
           <AlertDialogTrigger>
             <PostMethod>
               <BsImages />
-              <p>Imagessss</p>
+              <p>Images</p>
             </PostMethod>
           </AlertDialogTrigger>
           <AlertDialogContent className="h-screen overflow-y-scroll bg-slate-300 dark:bg-slate-800 sm:h-96">
@@ -121,14 +111,17 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
               <AlertDialogTitle className="flex justify-center text-2xl">
                 Upload Photo
               </AlertDialogTitle>
-              <AlertDialogDescription className="">
-                <form className="flex flex-col justify-center gap-4 pt-10" onSubmit={handlePost}>
+              <AlertDialogDescription>
+                <form
+                  className="flex flex-col justify-center gap-4 pt-10"
+                  onSubmit={handlePost}
+                >
                   {post.image && (
                     <Image
                       src={post.image}
                       width={200}
                       height={200}
-                      alt=""
+                      alt="Uploaded image"
                       className="h-40 w-full object-contain"
                     />
                   )}
@@ -136,24 +129,22 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
                     endpoint="imageUploader"
                     onClientUploadComplete={(res) => {
                       toast.success("Successfully uploaded image");
-                      setPost((prev) => ({ ...prev, image: res ? res[0]?.url : "" }));
+                      setPost((prev) => ({
+                        ...prev,
+                        image: res ? res[0]?.url : prev.image,
+                      }));
                     }}
                     onUploadError={(error: Error) => {
-                      // Handle the error, display a toast, or take other actions
-                      console.error("Failed to upload image:", error);
                       toast.error("Failed to upload image");
+                      console.error("Upload error:", error);
                     }}
                     className="dark:ut-allowed-content:text-lightTheme"
                   />
-
                   <div className="mt-10 grid">
                     <p>Caption</p>
                     <textarea
-                      name=""
-                      id=""
                       cols={30}
                       rows={3}
-                      value={post.text}
                       onChange={(e) => {
                         setPost((prev) => ({ ...prev, text: e.target.value }));
                       }}
@@ -177,20 +168,18 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
               <p>Video</p>
             </PostMethod>
           </AlertDialogTrigger>
-          <AlertDialogContent className=" h-screen overflow-y-scroll bg-slate-300  dark:bg-slate-800 sm:h-full">
+          <AlertDialogContent className="h-screen overflow-y-scroll bg-slate-300 dark:bg-slate-800 sm:h-full">
             <AlertDialogHeader>
-              <AlertDialogTitle className=" flex justify-center text-2xl">
+              <AlertDialogTitle className="flex justify-center text-2xl">
                 Upload Video
               </AlertDialogTitle>
-              <AlertDialogDescription className=" ">
+              <AlertDialogDescription>
                 <form
-                  className="flex flex-col  justify-center gap-4 pt-10"
-                  onSubmit={(e) => {
-                    handlePost(e);
-                  }}
+                  className="flex flex-col justify-center gap-4 pt-10"
+                  onSubmit={handlePost}
                 >
                   {post.video && (
-                    <div className=" flex justify-center">
+                    <div className="flex justify-center">
                       <ReactPlayer
                         url={post.video}
                         controls={true}
@@ -203,37 +192,34 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
                       />
                     </div>
                   )}
-
                   <UploadButton
                     endpoint="videoUploader"
                     onClientUploadComplete={(res) => {
-                      toast.success("successfully uploaded video");
+                      toast.success("Successfully uploaded video");
                       setPost((prev) => ({
                         ...prev,
                         video: res ? res[0]?.url : prev.video,
                       }));
                     }}
                     onUploadError={(error: Error) => {
-                      // Do something with the error.
-                      toast.error(`video size should be less than 64MB`);
+                      toast.error("Failed to upload video");
+                      console.error("Upload error:", error);
                     }}
-                    className=" dark:ut-allowed-content:text-lightTheme"
+                    className="dark:ut-allowed-content:text-lightTheme"
                   />
-                  <div className=" mt-10 grid">
+                  <div className="mt-10 grid">
                     <p>Caption</p>
                     <textarea
-                      name=""
-                      id=""
                       cols={30}
                       rows={3}
                       onChange={(e) => {
                         setPost((prev) => ({ ...prev, text: e.target.value }));
                       }}
-                      placeholder="Caption for you post"
-                      className="rounded-lg border-2 bg-lightTheme p-2  dark:bg-darkTheme "
+                      placeholder="Caption for your post"
+                      className="rounded-lg border-2 bg-lightTheme p-2 dark:bg-darkTheme"
                     ></textarea>
                   </div>
-                  <AlertDialogAction type="submit" className=" mt-10">
+                  <AlertDialogAction type="submit" className="mt-10">
                     Post
                   </AlertDialogAction>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -242,10 +228,11 @@ const MakePost = ({ redirect }: { redirect: boolean }) => {
             </AlertDialogHeader>
           </AlertDialogContent>
         </AlertDialog>
-      </div> */}
+      </div>
     </div>
   );
 };
+
 export default MakePost;
 
 const PostMethod = ({ children }: { children: React.ReactNode }) => {
